@@ -85,6 +85,13 @@ class AssignmentController extends Controller
     public function actionView($id)
     {
         $model = $this->findModel($id);
+        $user = $this->findModel(Yii::$app->user->id);  
+        
+        if ($user->es_super_usuario == 0) {
+            if($model->es_super_usuario == 1){
+                throw new ForbiddenHttpException('No tiene permiso para ejecutar esta acción');
+            }
+        }
 
         return $this->render('view', [
                 'model' => $model,

@@ -2,16 +2,16 @@
 
 namespace mdm\admin\models;
 
-use mdm\admin\components\Configs;
-use mdm\admin\components\Helper;
-use mdm\admin\controllers\AssignmentController;
-use mdm\admin\Module;
 use Yii;
-use yii\base\Model;
-use yii\helpers\Json;
-use yii\helpers\Url;
 use yii\rbac\Item;
 use yii\rbac\Rule;
+use yii\base\Model;
+use yii\helpers\Url;
+use mdm\admin\Module;
+use yii\helpers\Json;
+use mdm\admin\components\Helper;
+use mdm\admin\components\Configs;
+use mdm\admin\controllers\AssignmentController;
 
 /**
  * This is the model class for table "tbl_auth_item".
@@ -253,13 +253,29 @@ class AuthItem extends Model
         $manager = Configs::authManager();
         $advanced = Configs::instance()->advanced;
         $available = [];
+        $esSuperUsuario = Yii::$app->user->identity->es_super_usuario;
         if ($this->type == Item::TYPE_ROLE) {
-            foreach (array_keys($manager->getRoles()) as $name) {
-                $available[$name] = 'role';
+            foreach ($manager->getRoles() as $name => $role) {
+                /**
+                 * Verifica si el usuario es superusuario y si posee la regla de 
+                 * administrador de sistema a fin de mostrarle los roles 
+                 * correspondientes. En caso de que el rol no tenga asignada la regla, 
+                 * se agrega al listado, sea o no superusuario.
+                 */
+                if(($role->ruleName == 'esAdministradorSistema' && $esSuperUsuario) || $role->ruleName != 'esAdministradorSistema')
+                {
+                    $available[$role->name] = 'role';
+                }
             }
         }
         foreach (array_keys($manager->getPermissions()) as $name) {
-            $available[$name] = $name[0] == '/' || $advanced && $name[0] == '@' ? 'route' : 'permission';
+            /** 
+             * Si el usuario no es superusuario, se omiten las rutas /admin
+             */
+            if((str_starts_with($name, '/admin') && $esSuperUsuario) || !str_starts_with($name, '/admin'))
+            {
+                $available[$name] = $name[0] == '/' || $advanced && $name[0] == '@' ? 'route' : 'permission';
+            }
         }
 
         $assigned = [];
@@ -351,5 +367,23 @@ class AuthItem extends Model
         }
 
         return $result[$type];
+    }
+
+    /**
+     * Si el usuario es superusuario tiene permitido
+     * el acceso a todo. En caso contrario, se verifica la regla 
+     * y también se limita el acceso al rol "AdministradorDeUsuarios"
+     */
+    public function verificarAcceso()
+    {
+        $esSuperUsuario = Yii::$app->user->identity->es_super_usuario;
+        $permitido = false;
+        if($esSuperUsuario)
+        {
+            $permitido = true;
+        }elseif($this->ruleName != 'esAdministradorSistema' && $this->name != 'AdministradorDeUsuarios'){
+            $permitido = true;
+        }
+        return $permitido;
     }
 }

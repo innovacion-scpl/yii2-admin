@@ -3,13 +3,15 @@
 namespace mdm\admin\components;
 
 use Yii;
-use mdm\admin\models\AuthItem;
-use mdm\admin\models\searchs\AuthItem as AuthItemSearch;
+use yii\rbac\Item;
 use yii\web\Controller;
+use yii\filters\VerbFilter;
+use mdm\admin\models\AuthItem;
+use mdm\admin\models\Assignment;
 use yii\web\NotFoundHttpException;
 use yii\base\NotSupportedException;
-use yii\filters\VerbFilter;
-use yii\rbac\Item;
+use yii\web\ForbiddenHttpException;
+use mdm\admin\models\searchs\AuthItem as AuthItemSearch;
 
 /**
  * AuthItemController implements the CRUD actions for AuthItem model.
@@ -22,6 +24,19 @@ use yii\rbac\Item;
  */
 class ItemController extends Controller
 {
+    public $userClassName;
+
+    /**
+     * @inheritdoc
+     */
+    public function init()
+    {
+        parent::init();
+        if ($this->userClassName === null) {
+            $this->userClassName = Yii::$app->getUser()->identityClass;
+            $this->userClassName = $this->userClassName ? : 'mdm\admin\models\User';
+        }
+    }
 
     /**
      * @inheritdoc
@@ -46,9 +61,9 @@ class ItemController extends Controller
      */
     public function actionIndex()
     {
+        $esSuperUsuario = $this->findAssignmentModel(Yii::$app->user->id)->es_super_usuario;
         $searchModel = new AuthItemSearch(['type' => $this->type]);
-        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams());
-
+        $dataProvider = $searchModel->search(Yii::$app->request->getQueryParams(), $esSuperUsuario);       
         return $this->render('index', [
             'dataProvider' => $dataProvider,
             'searchModel' => $searchModel,
@@ -63,8 +78,17 @@ class ItemController extends Controller
     public function actionView($id)
     {
         $model = $this->findModel($id);
-
-        return $this->render('view', ['model' => $model]);
+        /**
+         * Si el usuario es superusuario tiene permitido
+         * el acceso a todo. En caso contrario, se verifica la regla 
+         * y también se limita el acceso al rol "AdministradorDeUsuarios"
+         */
+        if($model->verificarAcceso())
+        {
+            return $this->render('view', ['model' => $model]);
+        }else{
+            throw new ForbiddenHttpException('No tiene permiso para ejecutar esta acción');
+        }
     }
 
     /**
@@ -92,11 +116,15 @@ class ItemController extends Controller
     public function actionUpdate($id)
     {
         $model = $this->findModel($id);
-        if ($model->load(Yii::$app->getRequest()->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->name]);
+        if($model->verificarAcceso())
+        {
+            if ($model->load(Yii::$app->getRequest()->post()) && $model->save()) {
+                return $this->redirect(['view', 'id' => $model->name]);
+            }
+            return $this->render('update', ['model' => $model]);
+        }else{
+            throw new ForbiddenHttpException('No tiene permiso para ejecutar esta acción');
         }
-
-        return $this->render('update', ['model' => $model]);
     }
 
     /**
@@ -108,10 +136,14 @@ class ItemController extends Controller
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
-        Configs::authManager()->remove($model->item);
-        Helper::invalidate();
-
-        return $this->redirect(['index']);
+        if($model->verificarAcceso())
+        {
+            Configs::authManager()->remove($model->item);
+            Helper::invalidate();
+            return $this->redirect(['index']);
+        }else{
+            throw new ForbiddenHttpException('No tiene permiso para ejecutar esta acción'); 
+        }
     }
 
     /**
@@ -125,7 +157,6 @@ class ItemController extends Controller
         $model = $this->findModel($id);
         $success = $model->addChildren($items);
         Yii::$app->getResponse()->format = 'json';
-
         return array_merge($model->getItems(), ['success' => $success]);
     }
 
@@ -197,6 +228,24 @@ class ItemController extends Controller
         $item = $this->type === Item::TYPE_ROLE ? $auth->getRole($id) : $auth->getPermission($id);
         if ($item) {
             return new AuthItem($item);
+        } else {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+    }
+
+
+    /**
+     * Finds the Assignment model based on its primary key value.
+     * If the model is not found, a 404 HTTP exception will be thrown.
+     * @param  integer $id
+     * @return Assignment the loaded model
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    protected function findAssignmentModel($id)
+    {
+        $class = $this->userClassName;
+        if (($user = $class::findIdentity($id)) !== null) {
+            return new Assignment($id, $user);
         } else {
             throw new NotFoundHttpException('The requested page does not exist.');
         }

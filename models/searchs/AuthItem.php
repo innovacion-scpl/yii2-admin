@@ -55,7 +55,7 @@ class AuthItem extends Model
      * @param array $params
      * @return \yii\data\ActiveDataProvider|\yii\data\ArrayDataProvider
      */
-    public function search($params)
+    public function search($params, $esSuperUsuario)
     {
         /* @var \yii\rbac\Manager $authManager */
         $authManager = Configs::authManager();
@@ -82,7 +82,9 @@ class AuthItem extends Model
             foreach ($items as $name => $item) {
                 $f = (empty($search) || mb_strpos(mb_strtolower($item->name), $search) !== false) &&
                     (empty($desc) || mb_strpos(mb_strtolower($item->description), $desc) !== false) &&
-                    (empty($ruleName) || $item->ruleName == $ruleName);
+                    (empty($ruleName) || $item->ruleName == $ruleName) && 
+                    (($item->ruleName != 'esAdministradorSistema' && !$esSuperUsuario) || $esSuperUsuario) && 
+                    (($item->name != 'AdministradorDeUsuarios' && !$esSuperUsuario) || $esSuperUsuario);
                 if (!$f) {
                     unset($items[$name]);
                 }

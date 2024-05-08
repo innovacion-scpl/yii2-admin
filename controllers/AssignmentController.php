@@ -4,7 +4,10 @@ namespace mdm\admin\controllers;
 
 use Yii;
 use mdm\admin\models\Assignment;
+use mdm\admin\models\LogAsignaciones;
+use mdm\admin\models\LogAsignacionesUsuario;
 use mdm\admin\models\searchs\Assignment as AssignmentSearch;
+use yii\db\Expression;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -112,6 +115,17 @@ class AssignmentController extends Controller
         $items = Yii::$app->getRequest()->post('items', []);
         $model = new Assignment($id);
         $success = $model->assign($items);
+        if($success){
+            foreach ($items as $item) {   
+                $logasignacion = new LogAsignacionesUsuario();
+                $logasignacion->usuario_accion = Yii::$app->user->identity->id;
+                $logasignacion->usuario_asignado = $id;
+                $logasignacion->item_name = $item;
+                $logasignacion->fecha_hora = new Expression("NOW()");
+                $logasignacion->tipo_accion_permiso = "asignado";
+                $logasignacion->save();
+            }
+        }
         Yii::$app->getResponse()->format = 'json';
         return array_merge($model->getItems(), ['success' => $success]);
     }
@@ -126,6 +140,17 @@ class AssignmentController extends Controller
         $items = Yii::$app->getRequest()->post('items', []);
         $model = new Assignment($id);
         $success = $model->revoke($items);
+        if($success){
+            foreach ($items as $item) {   
+                $logasignacion = new LogAsignacionesUsuario();
+                $logasignacion->usuario_accion = Yii::$app->user->identity->id;
+                $logasignacion->usuario_asignado = $id;
+                $logasignacion->item_name = $item;
+                $logasignacion->fecha_hora = new Expression("NOW()");
+                $logasignacion->tipo_accion_permiso = "desasignado";
+                $logasignacion->save();
+            }
+        }  
         Yii::$app->getResponse()->format = 'json';
         return array_merge($model->getItems(), ['success' => $success]);
     }

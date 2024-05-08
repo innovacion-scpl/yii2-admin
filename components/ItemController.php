@@ -3,6 +3,8 @@
 namespace mdm\admin\components;
 
 use Yii;
+use mdm\admin\models\LogAsignacionesPermiso;
+use yii\db\Expression;
 use yii\rbac\Item;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
@@ -156,7 +158,21 @@ class ItemController extends Controller
         $items = Yii::$app->getRequest()->post('items', []);
         $model = $this->findModel($id);
         $success = $model->addChildren($items);
+
+        if($success){
+            foreach ($items as $item) {   
+                $logasignacion = new LogAsignacionesPermiso();
+                $logasignacion->usuario_accion = Yii::$app->user->identity->id;
+                $logasignacion->item_name_accion_permiso = $item;
+                $logasignacion->item_name_modificado = $id;
+                $logasignacion->fecha_hora = new Expression("NOW()");
+                $logasignacion->tipo_accion_permiso = "asignado";
+                $logasignacion->save();
+            }
+        }  
+
         Yii::$app->getResponse()->format = 'json';
+
         return array_merge($model->getItems(), ['success' => $success]);
     }
 
@@ -184,8 +200,18 @@ class ItemController extends Controller
         $items = Yii::$app->getRequest()->post('items', []);
         $model = $this->findModel($id);
         $success = $model->removeChildren($items);
+        if($success){
+            foreach ($items as $item) {   
+                $logasignacion = new LogAsignacionesPermiso();
+                $logasignacion->item_name_modificado = $id;
+                $logasignacion->usuario_accion = Yii::$app->user->identity->id;
+                $logasignacion->item_name_accion_permiso = $item;
+                $logasignacion->fecha_hora = new Expression("NOW()");
+                $logasignacion->tipo_accion_permiso = "desasignado";
+                $logasignacion->save();
+            }
+        }  
         Yii::$app->getResponse()->format = 'json';
-
         return array_merge($model->getItems(), ['success' => $success]);
     }
 

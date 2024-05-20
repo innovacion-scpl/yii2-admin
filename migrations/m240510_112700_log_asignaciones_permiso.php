@@ -3,7 +3,7 @@
 use yii\db\Schema;
 use yii\db\Migration;
 
-class m240510_112700_log_asignaciones_permiso extends Migration
+class m240520_131546_log_asignaciones_permiso extends Migration
 {
 
     public function init()
@@ -27,11 +27,13 @@ class m240510_112700_log_asignaciones_permiso extends Migration
                 'item_name_modificado'=> $this->string(45)->notNull(),
             ],$tableOptions
         );
+        $this->createIndex('log_asignaciones_permiso_FK','{{%log_asignaciones_permiso}}',['usuario_accion'],false);
 
     }
 
     public function safeDown()
     {
+        $this->dropIndex('log_asignaciones_permiso_FK', '{{%log_asignaciones_permiso}}');
         $this->dropTable('{{%log_asignaciones_permiso}}');
     }
 }

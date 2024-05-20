@@ -3,7 +3,7 @@
 use yii\db\Schema;
 use yii\db\Migration;
 
-class m240520_131546_log_asignaciones_permiso extends Migration
+class m240510_112700_log_asignaciones_permiso extends Migration
 {
 
     public function init()

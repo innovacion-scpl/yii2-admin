@@ -28,6 +28,7 @@ unset($rules[RouteRule::RULE_NAME]);
     GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
+        'pager' => (class_exists('yii\bootstrap5\LinkPager')) ? ['class' => 'yii\bootstrap5\LinkPager'] : [],
         'columns' => [
             ['class' => 'yii\grid\SerialColumn'],
             [

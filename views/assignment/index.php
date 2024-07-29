@@ -35,6 +35,7 @@ $columns[] = [
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => $columns,
+        'pager' => (class_exists('yii\bootstrap5\LinkPager')) ? ['class' => 'yii\bootstrap5\LinkPager'] : [],
     ]);
     ?>
     <?php Pjax::end(); ?>

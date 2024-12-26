@@ -68,6 +68,10 @@ class Assignment extends \mdm\admin\BaseObject
         foreach ($items as $name) {
             try {
                 $item = $manager->getRole($name);
+                if($item && (Yii::$app->name == 'Sistema RRHH') && ($name == 'Coordinador' || $name == 'Supervisor')){
+                    $permisoUsuario = new \backend\models\PermisoUsuarioSector();
+                    $permisoUsuario->eliminarPermisos($this->id);
+                }
                 $item = $item ?: $manager->getPermission($name);
                 $manager->revoke($item, $this->id);
                 $success++;

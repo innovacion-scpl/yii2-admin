@@ -63,14 +63,25 @@ class Assignment extends \mdm\admin\BaseObject
      */
     public function revoke($items)
     {
+        function destildarPermisos($manager, $permiso, $user_id){
+            $hijos = $manager->getChildren($permiso);
+            if(!empty($hijos)){
+                foreach ($hijos as $key => $hijo) {
+                    $permisoUsuario = \backend\models\PermisoUsuarioSector::find()->where(['nombre_permiso' => $hijo->name])->one();
+                    if(isset($permisoUsuario)){
+                        $permisoUsuario->eliminarPermisosUsuario($hijo->name, $user_id);
+                        destildarPermisos($manager, $hijo->name, $user_id);
+                    }
+                }
+            }
+        }
         $manager = Configs::authManager();
         $success = 0;
         foreach ($items as $name) {
             try {
                 $item = $manager->getRole($name);
                 if($item && (Yii::$app->name == 'Sistema RRHH') && ($name == 'Coordinador' || $name == 'Supervisor')){
-                    $permisoUsuario = new \backend\models\PermisoUsuarioSector();
-                    $permisoUsuario->eliminarPermisos($this->id);
+                    destildarPermisos($manager, $name, $this->id);
                 }
                 $item = $item ?: $manager->getPermission($name);
                 $manager->revoke($item, $this->id);

@@ -58,6 +58,7 @@ class Assignment extends \mdm\admin\BaseObject
     
     /**
      * Destilda los permisos de usuario por sector.
+     * Necesita que el sistema tenga implementado el modelo PermisoUsuarioSector
      */
     public function destildarPermisos($manager, $permiso, $user_id){
         $hijos = $manager->getChildren($permiso);
@@ -77,7 +78,7 @@ class Assignment extends \mdm\admin\BaseObject
      * @param array $items
      * @return integer number of successful revoke
      */
-    public function revoke($items)
+    public function revoke($items, $destildarPermisos)
     {
       
         $manager = Configs::authManager();
@@ -85,7 +86,7 @@ class Assignment extends \mdm\admin\BaseObject
         foreach ($items as $name) {
             try {
                 $item = $manager->getRole($name);
-                if($item && (Yii::$app->name == 'Sistema RRHH') && ($name == 'Coordinador' || $name == 'Supervisor')){
+                if($item && ($destildarPermisos) && ($name == 'Coordinador' || $name == 'Supervisor')){
                     $this->destildarPermisos($manager, $name, $this->id);
                 }
                 $item = $item ?: $manager->getPermission($name);

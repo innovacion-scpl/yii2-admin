@@ -27,6 +27,7 @@ class AssignmentController extends Controller
     public $fullnameField;
     public $searchClass;
     public $extraColumns = [];
+    public $destildarPermisos;
 
     /**
      * @inheritdoc
@@ -139,7 +140,7 @@ class AssignmentController extends Controller
     {
         $items = Yii::$app->getRequest()->post('items', []);
         $model = new Assignment($id);
-        $success = $model->revoke($items);
+        $success = $model->revoke($items, $this->destildarPermisos);
         if($success){
             foreach ($items as $item) {   
                 $logasignacion = new LogAsignacionesUsuario();

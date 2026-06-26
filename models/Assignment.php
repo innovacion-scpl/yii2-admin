@@ -65,9 +65,9 @@ class Assignment extends \mdm\admin\BaseObject
         if(!empty($hijos)){
             foreach ($hijos as $key => $hijo) {
                 $permisoUsuario = \backend\models\PermisoUsuarioSector::find()->where(['nombre_permiso' => $hijo->name])->one();
-                $permisoUsuario->eliminarPermisosUsuario($hijo->name, $user_id);
                 if(isset($permisoUsuario)){
-                    destildarPermisos($manager, $hijo->name, $user_id);
+                    $permisoUsuario->eliminarPermisosUsuario($hijo->name, $user_id);
+                    $this->destildarPermisos($manager, $hijo->name, $user_id);
                 }
             }
         }
